@@ -3,6 +3,8 @@ require "./preshed/*"
 # TODO: Write documentation for `Preshed`
 module Preshed
   class Map # UInt64 => UInt64
+    include Enumerable({UInt64, Void*})
+
     struct Cell
       @key : UInt64
       @value : Void*
@@ -68,21 +70,31 @@ module Preshed
       return value
     end
 
-    private def find_cell(key : UInt64) : Cell*
-      i = key & (@capacity - 1)
-      while (@cells + i).value.key != EMPTY_KEY && (@cells + i).value.key != key
-        i = (i + 1) & (@capacity - 1)
+    private def find_cell(key : UInt64, cells = @cells, capacity = @capacity) : Cell*
+      i = key & (capacity - 1)
+      while (cells + i).value.key != EMPTY_KEY && (cells + i).value.key != key
+        i = (i + 1) & (capacity - 1)
       end
-      return @cells + i
+      return cells + i
+    end
+
+    def each
+      (0...@capacity).each do |i|
+        if (@cells + i).value.key != EMPTY_KEY
+          yield (@cells + i).value.key, (@cells + i).value.value
+        end
+      end
     end
 
     private def resize
       new_capacity = @capacity * 2
-      @cells = @cells.realloc(new_capacity)
-      (@capacity...new_capacity).each do |i|
-        @cells[i] = Cell.new(EMPTY_KEY, Pointer(Void).null)
+      cells = Pointer(Cell).malloc(new_capacity, Cell.new(EMPTY_KEY, Pointer(Void).null))
+      each do |k, v|
+        cell = find_cell k, cells, new_capacity
+        cell.value = Cell.new(k, v)
       end
       @capacity = new_capacity
+      @cells = cells
     end
   end
 end
