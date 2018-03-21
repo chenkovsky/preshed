@@ -1,0 +1,9 @@
+name: preshed
+version: 0.1.0
+
+authors:
+  - chenkovsky <chenkovsky@qq.com>
+
+crystal: 0.24.2
+
+license: MIT
