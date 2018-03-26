@@ -2,12 +2,12 @@ require "./preshed/*"
 
 # TODO: Write documentation for `Preshed`
 module Preshed
-  class Map # UInt64 => UInt64
-    include Enumerable({UInt64, Void*})
+  class Map(V) # UInt64 => UInt64
+    include Enumerable({UInt64, V})
 
-    struct Cell
+    struct Cell(V)
       @key : UInt64
-      @value : Void*
+      @value : V
       property :key, :value
 
       def initialize(@key, @value)
@@ -16,20 +16,21 @@ module Preshed
 
     EMPTY_KEY = 0_u64
 
-    @cells : Pointer(Cell)
+    @cells : Pointer(Cell(V))
     @size : UInt64
     @capacity : UInt64
+    @default : V
 
     getter :capacity, :size
 
-    def initialize(initial_size : Int = 8)
+    def initialize(@default : V, initial_size : Int = 8)
       initial_size = 8 if initial_size == 0
       initial_size = Math.pw2ceil(initial_size)
       @capacity = initial_size.to_u64
       @size = 0_u64
-      @cells = Pointer(Cell).malloc(@capacity)
+      @cells = Pointer(Cell(V)).malloc(@capacity)
       (0...@capacity).each do |i|
-        @cells[i] = Cell.new(EMPTY_KEY, Pointer(Void).null)
+        @cells[i] = Cell(V).new(EMPTY_KEY, @default)
       end
     end
 
@@ -37,7 +38,7 @@ module Preshed
       !self[key]?.nil?
     end
 
-    def []=(key : UInt64, val : Void*)
+    def []=(key : UInt64, val : V)
       cell = find_cell key
       if cell.value.key == EMPTY_KEY
         cell.value.key = key
@@ -48,29 +49,29 @@ module Preshed
       self
     end
 
-    def []?(key : UInt64) : Void*?
+    def []?(key : UInt64) : V?
       cell = find_cell key
       return nil if cell.value.key != key
       return cell.value.value
     end
 
-    def [](key : UInt64) : Void*
+    def [](key : UInt64) : V
       ret = self[key]?
       raise IndexError.new if ret.is_a?(Nil)
       return ret
     end
 
-    def delete(key : UInt64) : Void*?
+    def delete(key : UInt64) : V?
       cell = find_cell key
       return nil if cell.value.key != key
       cell.value.key = EMPTY_KEY
       value = cell.value.value
-      cell.value.value = Pointer(Void).null
+      cell.value.value = @default
       @size -= 1
       return value
     end
 
-    private def find_cell(key : UInt64, cells = @cells, capacity = @capacity) : Cell*
+    private def find_cell(key : UInt64, cells = @cells, capacity = @capacity) : Cell(V)*
       i = key & (capacity - 1)
       while (cells + i).value.key != EMPTY_KEY && (cells + i).value.key != key
         i = (i + 1) & (capacity - 1)
@@ -88,10 +89,10 @@ module Preshed
 
     private def resize
       new_capacity = @capacity * 2
-      cells = Pointer(Cell).malloc(new_capacity, Cell.new(EMPTY_KEY, Pointer(Void).null))
+      cells = Pointer(Cell(V)).malloc(new_capacity, Cell(V).new(EMPTY_KEY, @default))
       each do |k, v|
         cell = find_cell k, cells, new_capacity
-        cell.value = Cell.new(k, v)
+        cell.value = Cell(V).new(k, v)
       end
       @capacity = new_capacity
       @cells = cells
