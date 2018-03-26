@@ -87,6 +87,26 @@ module Preshed
       end
     end
 
+    def keys
+      arr = Array(UInt64).new
+      (0...@capacity).each do |i|
+        if (@cells + i).value.key != EMPTY_KEY
+          arr << (@cells + i).value.key
+        end
+      end
+      return arr
+    end
+
+    def values
+      arr = Array(V).new
+      (0...@capacity).each do |i|
+        if (@cells + i).value.key != EMPTY_KEY
+          arr << (@cells + i).value.value
+        end
+      end
+      return arr
+    end
+
     private def resize
       new_capacity = @capacity * 2
       cells = Pointer(Cell(V)).malloc(new_capacity, Cell(V).new(EMPTY_KEY, @default))
