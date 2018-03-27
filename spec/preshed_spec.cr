@@ -11,7 +11,7 @@ describe Preshed do
     map.size.should eq(1)
     map.delete(str.hash).should eq(str.to_unsafe)
     map.size.should eq(0)
-    map[str.hash]?.should eq(nil)
+    map[str.hash].should eq(Pointer(UInt8).null)
     (1...1000).each do |i|
       map[i.hash] = Pointer(UInt8).new(i)
     end

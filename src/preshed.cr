@@ -42,16 +42,10 @@ module Preshed
       self
     end
 
-    def []?(key : UInt64) : V?
-      cell = find_cell key
-      return nil if cell.value.key != key
-      return cell.value.value
-    end
-
     def [](key : UInt64) : V
-      ret = self[key]?
-      raise IndexError.new if ret.is_a?(Nil)
-      return ret
+      cell = find_cell key
+      return @default if cell.value.key != key
+      return cell.value.value
     end
 
     def delete(key : UInt64) : V?
