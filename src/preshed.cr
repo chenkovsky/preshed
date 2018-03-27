@@ -28,14 +28,7 @@ module Preshed
       initial_size = Math.pw2ceil(initial_size)
       @capacity = initial_size.to_u64
       @size = 0_u64
-      @cells = Pointer(Cell(V)).malloc(@capacity)
-      (0...@capacity).each do |i|
-        @cells[i] = Cell(V).new(EMPTY_KEY, @default)
-      end
-    end
-
-    def include?(key : UInt64)
-      !self[key]?.nil?
+      @cells = Pointer(Cell(V)).malloc(@capacity, Cell(V).new(EMPTY_KEY, @default))
     end
 
     def []=(key : UInt64, val : V)
@@ -85,26 +78,6 @@ module Preshed
           yield (@cells + i).value.key, (@cells + i).value.value
         end
       end
-    end
-
-    def keys
-      arr = Array(UInt64).new
-      (0...@capacity).each do |i|
-        if (@cells + i).value.key != EMPTY_KEY
-          arr << (@cells + i).value.key
-        end
-      end
-      return arr
-    end
-
-    def values
-      arr = Array(V).new
-      (0...@capacity).each do |i|
-        if (@cells + i).value.key != EMPTY_KEY
-          arr << (@cells + i).value.value
-        end
-      end
-      return arr
     end
 
     private def resize
