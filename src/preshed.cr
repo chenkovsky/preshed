@@ -21,7 +21,7 @@ module Preshed
     @capacity : UInt64
     @default : V
 
-    getter :capacity, :size
+    getter :capacity, :size, :default
 
     def initialize(@default : V, initial_size : Int = 8)
       initial_size = 8 if initial_size == 0
