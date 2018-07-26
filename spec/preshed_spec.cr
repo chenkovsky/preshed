@@ -38,4 +38,17 @@ describe Preshed do
       map[i.hash].should eq(map2[i.hash])
     end
   end
+
+  it "save load2" do
+    map = Preshed::Map(Int32).new(0)
+    (1...1000).each do |i|
+      map[i.hash] = i
+    end
+    map.to_disk("tmp.bin")
+    map2 = Preshed::Map(Int32).from_disk("tmp.bin")
+    map2.size.should eq(map.size)
+    (1...1000).each do |i|
+      map[i.hash].should eq(map2[i.hash])
+    end
+  end
 end

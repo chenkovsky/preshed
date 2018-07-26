@@ -5,5 +5,9 @@ authors:
   - chenkovsky <chenkovsky@qq.com>
 
 crystal: 0.24.2
+dependencies:
+  super_io:
+    github: chenkovsky/super_io
+    branch: master
 
 license: MIT

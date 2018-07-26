@@ -1,15 +1,28 @@
 require "./preshed/*"
+require "super_io"
 
 # TODO: Write documentation for `Preshed`
 module Preshed
   class Map(V) # UInt64 => UInt64
     include Enumerable({UInt64, V})
 
+    def self.from_disk(path : String, format = IO::ByteFormat::LittleEndian) : self
+      File.open(path, "rb") do |f|
+        self.from_io f, format
+      end
+    end
+
     def self.from_disk(path : String, format = IO::ByteFormat::LittleEndian, &block : (IO, IO::ByteFormat) -> V) : self
       File.open(path, "rb") do |f|
         self.from_io f, format do |io, format|
           yield io, format
         end
+      end
+    end
+
+    def to_disk(path : String, format = IO::ByteFormat::LittleEndian) : Void
+      File.open(path, "wb") do |f|
+        to_io f, format
       end
     end
 
@@ -21,6 +34,15 @@ module Preshed
       end
     end
 
+    def to_io(io : IO, format : IO::ByteFormat)
+      @size.to_io io, format
+      SuperIO.to_io @default, io, format
+      each do |key, val|
+        key.to_io io, format
+        SuperIO.to_io val, io, format
+      end
+    end
+
     def to_io(io : IO, format : IO::ByteFormat, &block : (V, IO, IO::ByteFormat) -> Void)
       @size.to_io io, format
       yield @default, io, format
@@ -28,6 +50,18 @@ module Preshed
         key.to_io io, format
         yield val, io, format
       end
+    end
+
+    def self.from_io(io : IO, format : IO::ByteFormat)
+      size = UInt64.from_io io, format
+      default = SuperIO.from_io V, io, format
+      preshed = self.new(default, size)
+      (0...size).each do |i|
+        k = UInt64.from_io io, format
+        v = SuperIO.from_io V, io, format
+        preshed[k] = v
+      end
+      return preshed
     end
 
     def self.from_io(io : IO, format : IO::ByteFormat, &block : (IO, IO::ByteFormat) -> V)
