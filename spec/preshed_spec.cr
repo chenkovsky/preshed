@@ -21,4 +21,21 @@ describe Preshed do
     end
     map.size.should eq(999)
   end
+
+  it "save load" do
+    map = Preshed::Map(UInt8*).new(Pointer(UInt8).null)
+    (1...1000).each do |i|
+      map[i.hash] = Pointer(UInt8).new(i)
+    end
+    map.to_disk("tmp.bin") do |v, io, format|
+      (v.address).to_io io, format
+    end
+    map2 = Preshed::Map(UInt8*).from_disk("tmp.bin") do |io, format|
+      Pointer(UInt8).new(UInt64.from_io io, format)
+    end
+    map2.size.should eq(map.size)
+    (1...1000).each do |i|
+      map[i.hash].should eq(map2[i.hash])
+    end
+  end
 end

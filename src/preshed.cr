@@ -5,6 +5,43 @@ module Preshed
   class Map(V) # UInt64 => UInt64
     include Enumerable({UInt64, V})
 
+    def self.from_disk(path : String, format = IO::ByteFormat::LittleEndian, &block : (IO, IO::ByteFormat) -> V) : self
+      File.open(path, "rb") do |f|
+        self.from_io f, format do |io, format|
+          yield io, format
+        end
+      end
+    end
+
+    def to_disk(path : String, format = IO::ByteFormat::LittleEndian, &block : (V, IO, IO::ByteFormat) -> Void) : Void
+      File.open(path, "wb") do |f|
+        to_io f, format do |v, io, format|
+          yield v, io, format
+        end
+      end
+    end
+
+    def to_io(io : IO, format : IO::ByteFormat, &block : (V, IO, IO::ByteFormat) -> Void)
+      @size.to_io io, format
+      yield @default, io, format
+      each do |key, val|
+        key.to_io io, format
+        yield val, io, format
+      end
+    end
+
+    def self.from_io(io : IO, format : IO::ByteFormat, &block : (IO, IO::ByteFormat) -> V)
+      size = UInt64.from_io io, format
+      default = yield io, format
+      preshed = self.new(default, size)
+      (0...size).each do |i|
+        k = UInt64.from_io io, format
+        v = yield io, format
+        preshed[k] = v
+      end
+      return preshed
+    end
+
     struct Cell(V)
       @key : UInt64
       @value : V
