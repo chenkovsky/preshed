@@ -51,4 +51,16 @@ describe Preshed do
       map[i.hash].should eq(map2[i.hash])
     end
   end
+  it "clear" do
+    map = Preshed::Map(UInt8*).new(Pointer(UInt8).null)
+    (1...1000).each do |i|
+      map[i.hash] = Pointer(UInt8).new(i)
+    end
+    map.size.should eq(999)
+    map.clear
+    map.size.should eq(0)
+    (1...1000).each do |i|
+      map[i.hash].should eq(Pointer(UInt8).null)
+    end
+  end
 end

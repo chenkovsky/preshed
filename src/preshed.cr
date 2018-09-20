@@ -129,6 +129,13 @@ module Preshed
       return value
     end
 
+    def clear
+      (0...@capacity).each do |idx|
+        (@cells + idx).value.key = EMPTY_KEY
+      end
+      @size = 0
+    end
+
     private def find_cell(key : UInt64, cells = @cells, capacity = @capacity) : Cell(V)*
       i = key & (capacity - 1)
       while (cells + i).value.key != EMPTY_KEY && (cells + i).value.key != key
